@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    /* Efecto para que las tarjetas se eleven al pasar el mouse */
+    .card-link {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        text-decoration: none !important;
+        display: block;
+        height: 100%;
+    }
+    .card-link:hover {
+        transform: translateY(-5px);
+    }
+</style>
+
+<div class="row">
+    <div class="col-12 mb-4">
+        <h2 class="fw-bold text-dark">Panel de Control <small class="text-muted fs-6">| Bienvenido, {{ current_user.nombre_completo }}</small></h2>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <a href="{{ url_for('inventario.ver_inventario') }}" class="card-link">
+            <div class="card bg-primary text-white h-100 shadow border-0">
+                <div class="card-body text-center">
+                    <h6 class="text-uppercase opacity-75">Productos</h6>
+                    <h2 class="display-4 fw-bold">{{ total_productos }}</h2>
+                    <i class="fas fa-box fa-2x opacity-25"></i>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-4">
+        <a href="{{ url_for('inventario.ver_inventario') }}" class="card-link">
+            <div class="card bg-danger text-white h-100 shadow border-0">
+                <div class="card-body text-center">
+                    <h6 class="text-uppercase opacity-75">Bajo Stock</h6>
+                    <h2 class="display-4 fw-bold">{{ stock_bajo }}</h2>
+                    <i class="fas fa-exclamation-triangle fa-2x opacity-25"></i>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-4">
+        <a href="{{ url_for('inventario.categorias') }}" class="card-link">
+            <div class="card bg-success text-white h-100 shadow border-0">
+                <div class="card-body text-center">
+                    <h6 class="text-uppercase opacity-75">Categorías</h6>
+                    <h2 class="display-4 fw-bold">{{ total_categorias }}</h2>
+                    <i class="fas fa-tags fa-2x opacity-25"></i>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<div class="mt-5 p-4 bg-white rounded shadow-sm border">
+    <h5 class="fw-bold mb-3">Acciones Rápidas</h5>
+    
+    <a href="{{ url_for('inventario.categorias') }}" class="btn btn-outline-dark me-2">
+        <i class="fas fa-folder-plus me-2"></i>Nueva Categoría
+    </a>
+    
+    <a href="{{ url_for('inventario.nuevo_producto') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Registrar Producto
+    </a>
+</div>
+{% endblock %}

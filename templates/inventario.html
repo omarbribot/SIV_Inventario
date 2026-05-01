@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">Gestión de Inventario</h2>
+    <a href="{{ url_for('inventario.nuevo_producto') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Nuevo Producto
+    </a>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-center">
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Filtrar por Categoría</label>
+                <select name="categoria_id" class="form-select" onchange="this.form.submit()">
+                    <option value="">Todas las categorías</option>
+                    {% for cat in categorias %}
+                    <option value="{{ cat.id }}" {% if request.args.get('categoria_id')|int == cat.id %}selected{% endif %}>
+                        {{ cat.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <a href="{{ url_for('inventario.ver_inventario') }}" class="btn btn-outline-secondary w-100">Limpiar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">Imagen</th>
+                        <th>Producto</th>
+                        <th>Categoría</th>
+                        <th>Variantes</th>
+                        <th>Stock Total</th>
+                        <th class="text-end pe-4">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in productos %}
+                    <tr>
+                        <td class="ps-4">
+                            <img src="{{ url_for('static', filename='uploads/' + p.imagen) }}" 
+                                 class="rounded shadow-sm" 
+                                 style="width: 50px; height: 50px; object-fit: cover;"
+                                 alt="{{ p.nombre }}">
+                        </td>
+                        <td>
+                            <div class="fw-bold">{{ p.nombre }}</div>
+                            <small class="text-muted">ID: #{{ p.id }}</small>
+                        </td>
+                        <td><span class="badge bg-info text-dark">{{ p.categoria.nombre }}</span></td>
+                        <td>{{ p.variantes|length }} tallas/colores</td>
+                        <td>
+                            {% set total_stock = p.variantes|sum(attribute='stock') %}
+                            <span class="fw-bold {% if total_stock <= 5 %}text-danger{% else %}text-success{% endif %}">
+                                {{ total_stock }}
+                            </span>
+                        </td>
+                        <td class="text-end pe-4">
+                            <button class="btn btn-sm btn-outline-success me-1" data-bs-toggle="modal" data-bs-target="#modalMovimiento{{ p.id }}" title="Registrar Movimiento">
+                                <i class="fas fa-exchange-alt"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+
+                    <div class="modal fade" id="modalMovimiento{{ p.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-success text-white">
+                                    <h5 class="modal-title">Movimiento de Inventario</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form action="" method="POST" id="formMovimiento{{ p.id }}">
+                                    <div class="modal-body">
+                                        <p>Producto: <strong>{{ p.nombre }}</strong></p>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Seleccionar Variante (Talla/Color)</label>
+                                            <select class="form-select" required onchange="document.getElementById('formMovimiento{{ p.id }}').action='/movimiento/' + this.value">
+                                                <option value="">Elegir variante...</option>
+                                                {% for v in p.variantes %}
+                                                <option value="{{ v.id }}">
+                                                    {{ v.talla }} / {{ v.color }} (Actual: {{ v.stock }})
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Tipo de Movimiento</label>
+                                            <select name="tipo" class="form-select" required>
+                                                <option value="ENTRADA">ENTRADA (+)</option>
+                                                <option value="SALIDA">SALIDA (-)</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Cantidad</label>
+                                            <input type="number" name="cantidad" class="form-control" min="1" required>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Motivo</label>
+                                            <select name="motivo" class="form-select" required>
+                                                <option value="Venta">Venta</option>
+                                                <option value="Reposición">Reposición</option>
+                                                <option value="Dañado">Mercancía Dañada</option>
+                                                <option value="Ajuste">Ajuste Manual</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-success">Guardar</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="fas fa-box-open fa-3x mb-3"></i>
+                            <p>No se encontraron productos en esta categoría.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
