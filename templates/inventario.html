@@ -47,10 +47,14 @@
                     {% for p in productos %}
                     <tr>
                         <td class="ps-4">
+                            <!-- Imagen con disparador para vista ampliada -->
                             <img src="{{ url_for('static', filename='uploads/' + p.imagen) }}" 
                                  class="rounded shadow-sm" 
-                                 style="width: 50px; height: 50px; object-fit: cover;"
-                                 alt="{{ p.nombre }}">
+                                 style="width: 50px; height: 50px; object-fit: cover; cursor: pointer;"
+                                 alt="{{ p.nombre }}"
+                                 data-bs-toggle="modal" 
+                                 data-bs-target="#modalFoto{{ p.id }}"
+                                 title="Click para ampliar">
                         </td>
                         <td>
                             <div class="fw-bold">{{ p.nombre }}</div>
@@ -68,11 +72,70 @@
                             <button class="btn btn-sm btn-outline-success me-1" data-bs-toggle="modal" data-bs-target="#modalMovimiento{{ p.id }}" title="Registrar Movimiento">
                                 <i class="fas fa-exchange-alt"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-edit"></i></button>
+                            <div class="modal fade" id="modalEditar{{ p.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="fas fa-edit me-2"></i>Editar Información Básica</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('inventario.editar_producto', producto_id=p.id) }}" method="POST" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nombre del Producto</label>
+                        <input type="text" name="nombre" class="form-control" value="{{ p.nombre }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Descripción</label>
+                        <textarea name="descripcion" class="form-control" rows="3">{{ p.descripcion or '' }}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Cambiar Foto (Opcional)</label>
+                        <input type="file" name="imagen" class="form-control" accept="image/*">
+                        <div class="form-text text-muted">Si no seleccionas ningún archivo, se mantendrá la foto actual.</div>
+                    </div>
+                    
+                    <div class="text-center bg-light p-2 rounded">
+                        <small class="text-muted d-block mb-1">Foto actual:</small>
+                        <img src="{{ url_for('static', filename='uploads/' + p.imagen) }}" class="rounded shadow-sm" style="width: 60px; height: 60px; object-fit: cover;">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+                            <button class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="modal" data-bs-target="#modalEditar{{ p.id }}" title="Editar Producto">
+                                <i class="fas fa-edit"></i>
+                            </button>
                             <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
                         </td>
                     </tr>
 
+                    <!-- MODAL 1: Para ver la foto del producto ampliada -->
+                    <div class="modal fade" id="modalFoto{{ p.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title fw-bold">{{ p.nombre }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body text-center bg-light">
+                                    <img src="{{ url_for('static', filename='uploads/' + p.imagen) }}" 
+                                         alt="{{ p.nombre }}" 
+                                         class="img-fluid rounded shadow-sm" 
+                                         style="max-height: 70vh; object-fit: contain;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MODAL 2: Registrar Movimiento (Tu código original intacto) -->
                     <div class="modal fade" id="modalMovimiento{{ p.id }}" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog">
                             <div class="modal-content">

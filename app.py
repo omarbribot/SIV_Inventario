@@ -1,3 +1,6 @@
+import os
+import sys
+import webbrowser
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_login import LoginManager, login_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -8,9 +11,20 @@ from config import Config
 # IMPORTANTE: Importamos el Blueprint desde la carpeta routes
 from routes.inventario import inventario_bp
 
-app = Flask(__name__)
-app.config.from_object(Config)
+# --- LÓGICA DE RUTAS ABSOLUTAS ---
+if getattr(sys, 'frozen', False):
+    # Si es el EXE, usamos la ruta donde se extraen los archivos temporalmente
+    base_path = sys._MEIPASS
+else:
+    # Si es desarrollo normal, usamos la carpeta actual
+    base_path = os.path.abspath(".")
 
+app = Flask(__name__, 
+            template_folder=os.path.join(base_path, 'templates'), 
+            static_folder=os.path.join(base_path, 'static'))
+
+app.config.from_object(Config)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 db.init_app(app)
 
 # REGISTRAMOS EL BLUEPRINT
@@ -24,7 +38,6 @@ def load_user(user_id):
     return db.session.get(Usuario, int(user_id))
 
 # --- RUTAS DE ACCESO ---
-
 @app.route('/')
 def index():
     return redirect(url_for('login'))
@@ -70,11 +83,15 @@ def crear_admin():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-        # Esto intenta crear al admin automáticamente si no existe
         if not Usuario.query.filter_by(username='admin').first():
             admin = Usuario(username='admin', rol='admin', nombre_completo='Administrador Sistema')
             admin.password_hash = generate_password_hash('admin123')
             db.session.add(admin)
             db.session.commit()
-            print("Admin automático creado.")
-    app.run(debug=True)
+
+    # Abrimos el navegador automáticamente
+    if not os.environ.get("WERKZEUG_RUN_MAIN"):
+        webbrowser.open("http://127.0.0.1:5000")
+    
+    # IMPORTANTE: debug=False para el ejecutable
+    app.run(host='127.0.0.1', port=5000, debug=False)

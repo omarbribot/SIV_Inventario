@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Historial de Movimientos (Kardex)</h2>
+    <div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('inventario.ver_historial') }}" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Buscar Producto</label>
+                <input type="text" name="producto" class="form-control" placeholder="Ej: Nike, Camisa..." value="{{ request.args.get('producto', '') }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Fecha específica</label>
+                <input type="date" name="fecha" class="form-control" value="{{ request.args.get('fecha', '') }}">
+            </div>
+            <div class="col-md-4 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-primary w-100" style="height: 38px;">Filtrar</button>
+                <a href="{{ url_for('inventario.ver_historial') }}" class="btn btn-secondary w-100" style="height: 38px; display: flex; align-items: center; justify-content: center;">Limpiar</a>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+    <table class="table table-striped mt-3">
+        <thead class="table-dark">
+            <tr>
+                <th>Fecha</th>
+                <th>Producto / Variante</th>
+                <th>Tipo</th>
+                <th>Cantidad</th>
+                <th>Motivo</th>
+                <th>Responsable</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mov in movimientos %}
+            <tr>
+                <td>{{ mov.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ mov.variante.producto.nombre }} - {{ mov.variante.talla or '' }} {{ mov.variante.color or '' }}</td>
+                <td>
+                    <span class="badge {{ 'bg-success' if mov.tipo == 'ENTRADA' else 'bg-danger' }}">
+                        {{ mov.tipo }}
+                    </span>
+                </td>
+                <td>{{ mov.cantidad }}</td>
+                <td>{{ mov.motivo }}</td>
+                <td><i class="fas fa-user"></i> {{ mov.usuario.username }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot class="table-secondary">
+    <tr class="fw-bold">
+        <td colspan="3" class="text-end">Resumen del Filtro:</td>
+        <td class="text-success">+ {{ t_entradas }} Entradas</td>
+        <td class="text-danger">- {{ t_salidas }} Salidas</td>
+        <td colspan="2" class="table-dark text-center">Balance Neto: {{ balance }}</td>
+    </tr>
+</tfoot>
+
+    </table>
+</div>
+{% endblock %}

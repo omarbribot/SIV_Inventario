@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i> Volver al Panel
+    </a>
+</div>
+
+<div class="card shadow border-0">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">Nuevo Producto</h4>
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('inventario.nuevo_producto') }}" method="POST" enctype="multipart/form-data">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Nombre del Producto</label>
+                    <input type="text" name="nombre" class="form-control" placeholder="Ej. Zapato Deportivo" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Categoría</label>
+                    <select name="categoria_id" class="form-select" required>
+                        {% for cat in categorias %}
+                        <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-12 mb-3">
+                <label class="form-label fw-bold">Foto del Producto</label>
+                <input type="file" name="imagen" class="form-control" accept="image/*">
+                <div class="form-text">Formatos permitidos: JPG, PNG, GIF.</div>
+            </div>
+            <h5 class="fw-bold border-bottom pb-2">Variantes (Tallas y Colores)</h5>
+            <div id="contenedor-variantes">
+                <div class="row g-2 mb-2 fila-variante p-2 bg-light rounded">
+                    <div class="col-md-3">
+                        <input type="text" name="talla[]" class="form-control" placeholder="Talla (Opcional)">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" name="color[]" class="form-control" placeholder="Color" required>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" name="stock[]" class="form-control" placeholder="Stock" value="0">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="number" step="0.01" name="precio[]" class="form-control" placeholder="Precio $" required>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-danger w-100" onclick="eliminarFila(this)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-sm btn-info text-white mt-2" onclick="agregarFila()">
+                <i class="fas fa-plus me-1"></i> Añadir otra Talla/Color
+            </button>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button type="submit" name="accion" value="seguir" class="btn btn-outline-success">
+            <i class="fas fa-plus-circle me-2"></i>Guardar y Añadir Otro
+            </button>
+    
+            <button type="submit" name="accion" value="finalizar" class="btn btn-success">
+                <i class="fas fa-check-double me-2"></i>Guardar y Finalizar
+            </button>
+    </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function agregarFila() {
+    const contenedor = document.getElementById('contenedor-variantes');
+    const nuevaFila = contenedor.querySelector('.fila-variante').cloneNode(true);
+    
+    // Limpiar los campos de la nueva fila
+    nuevaFila.querySelectorAll('input').forEach(input => input.value = '');
+    nuevaFila.querySelector('input[name="stock[]"]').value = '0';
+    
+    contenedor.appendChild(nuevaFila);
+}
+
+function eliminarFila(btn) {
+    const filas = document.querySelectorAll('.fila-variante');
+    if (filas.length > 1) {
+        btn.closest('.fila-variante').remove();
+    } else {
+        alert("El producto debe tener al menos una variante.");
+    }
+}
+</script>
+{% endblock %}
