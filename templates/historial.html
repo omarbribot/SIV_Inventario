@@ -37,10 +37,9 @@
             {% for mov in movimientos %}
             <tr>
                 <td>{{ mov.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
-                <!-- Columna de la Foto con disparador del Modal -->
                 <td>
-                    {% if mov.variante.producto.imagen %}
-                        <img src="{{ url_for('static', filename='uploads/' ~ mov.variante.producto.imagen) }}" 
+                    {% if mov.variante and mov.variante.imagen %}
+                        <img src="{{ url_for('static', filename='uploads/' ~ mov.variante.imagen) }}" 
                              alt="Producto" 
                              class="img-thumbnail" 
                              style="width: 50px; height: 50px; object-fit: cover; cursor: pointer;"
@@ -64,8 +63,7 @@
                 <td><i class="fas fa-user"></i> {{ mov.usuario.username }}</td>
             </tr>
 
-            <!-- Modal Bootstrap único para la foto de cada movimiento -->
-            {% if mov.variante.producto.imagen %}
+            {% if mov.variante and mov.variante.imagen %}
             <div class="modal fade" id="imageModal{{ mov.id }}" tabindex="-1" aria-labelledby="imageModalLabel{{ mov.id }}" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
@@ -74,7 +72,7 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body text-center bg-light">
-                            <img src="{{ url_for('static', filename='uploads/' ~ mov.variante.producto.imagen) }}" 
+                            <img src="{{ url_for('static', filename='uploads/' ~ mov.variante.imagen) }}" 
                                  alt="Imagen completa" 
                                  class="img-fluid rounded shadow-sm" 
                                  style="max-height: 70vh; object-fit: contain;">

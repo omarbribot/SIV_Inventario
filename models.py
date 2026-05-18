@@ -1,8 +1,8 @@
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
-from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+
 db = SQLAlchemy()
 
 class Usuario(db.Model, UserMixin):
@@ -24,7 +24,7 @@ class Producto(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
     descripcion = db.Column(db.Text)
-    imagen = db.Column(db.String(255), default='default.png')
+    # Se eliminó la columna imagen de aquí, ya que ahora pertenece a cada variante
     fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
     categoria_id = db.Column(db.Integer, db.ForeignKey('categoria.id'))
     
@@ -40,11 +40,13 @@ class Variante(db.Model):
     stock = db.Column(db.Integer, default=0)
     precio_compra = db.Column(db.Float, default=0.0)
     precio_venta = db.Column(db.Float, default=0.0)
+    # Nueva ubicación de la imagen: Cada variante tiene su propia foto
+    imagen = db.Column(db.String(255), default='default.png')
 
 class Movimiento(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     variante_id = db.Column(db.Integer, db.ForeignKey('variante.id'), nullable=False)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False) # <--- Nuevo campo
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
     tipo = db.Column(db.String(10), nullable=False)  # 'ENTRADA' o 'SALIDA'
     cantidad = db.Column(db.Integer, nullable=False)
     motivo = db.Column(db.String(100), nullable=False) 

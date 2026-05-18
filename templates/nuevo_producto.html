@@ -27,47 +27,51 @@
                     </select>
                 </div>
             </div>
-            <div class="col-md-12 mb-3">
-                <label class="form-label fw-bold">Foto del Producto</label>
-                <input type="file" name="imagen" class="form-control" accept="image/*">
-                <div class="form-text">Formatos permitidos: JPG, PNG, GIF.</div>
-            </div>
-            <h5 class="fw-bold border-bottom pb-2">Variantes (Tallas y Colores)</h5>
+
+            <h5 class="fw-bold border-bottom pb-2 mb-3">Variantes (Fotos, Tallas y Colores)</h5>
             <div id="contenedor-variantes">
-                <div class="row g-2 mb-2 fila-variante p-2 bg-light rounded">
-                    <div class="col-md-3">
-                        <input type="text" name="talla[]" class="form-control" placeholder="Talla (Opcional)">
-                    </div>
-                    <div class="col-md-3">
-                        <input type="text" name="color[]" class="form-control" placeholder="Color" required>
+                <div class="row g-2 mb-3 fila-variante p-3 bg-light rounded align-items-end border">
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold">Talla (Opcional)</label>
+                        <input type="text" name="talla[]" class="form-control" placeholder="Ej. 42">
                     </div>
                     <div class="col-md-2">
-                        <input type="number" name="stock[]" class="form-control" placeholder="Stock" value="0">
-                    </div>
-                    <div class="col-md-3">
-                        <input type="number" step="0.01" name="precio[]" class="form-control" placeholder="Precio $" required>
+                        <label class="form-label small fw-bold">Color</label>
+                        <input type="text" name="color[]" class="form-control" placeholder="Ej. Negro" required>
                     </div>
                     <div class="col-md-1">
-                        <button type="button" class="btn btn-danger w-100" onclick="eliminarFila(this)">
-                            <i class="fas fa-times"></i>
+                        <label class="form-label small fw-bold">Stock</label>
+                        <input type="number" name="stock[]" class="form-control" placeholder="0" value="0">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold">Precio $</label>
+                        <input type="number" step="0.01" name="precio[]" class="form-control" placeholder="0.00" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold">Foto de la Variante</label>
+                        <input type="file" name="foto_variante[]" class="form-control" accept="image/*" required>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-danger w-100" onclick="eliminarFila(this)" disabled>
+                            <i class="fas fa-trash-alt me-1"></i> Eliminar
                         </button>
                     </div>
                 </div>
             </div>
 
-            <button type="button" class="btn btn-sm btn-info text-white mt-2" onclick="agregarFila()">
+            <button type="button" class="btn btn-sm btn-info text-white mt-2 mb-4" onclick="agregarFila()">
                 <i class="fas fa-plus me-1"></i> Añadir otra Talla/Color
             </button>
 
-            <div class="d-flex justify-content-end gap-2">
+            <div class="d-flex justify-content-end gap-2 border-top pt-3">
                 <button type="submit" name="accion" value="seguir" class="btn btn-outline-success">
-            <i class="fas fa-plus-circle me-2"></i>Guardar y Añadir Otro
-            </button>
+                    <i class="fas fa-plus-circle me-2"></i>Guardar y Añadir Otro
+                </button>
     
-            <button type="submit" name="accion" value="finalizar" class="btn btn-success">
-                <i class="fas fa-check-double me-2"></i>Guardar y Finalizar
-            </button>
-    </div>
+                <button type="submit" name="accion" value="finalizar" class="btn btn-success">
+                    <i class="fas fa-check-double me-2"></i>Guardar y Finalizar
+                </button>
+            </div>
         </form>
     </div>
 </div>
@@ -75,11 +79,22 @@
 <script>
 function agregarFila() {
     const contenedor = document.getElementById('contenedor-variantes');
+    // Clonamos la primera fila
     const nuevaFila = contenedor.querySelector('.fila-variante').cloneNode(true);
     
-    // Limpiar los campos de la nueva fila
-    nuevaFila.querySelectorAll('input').forEach(input => input.value = '');
-    nuevaFila.querySelector('input[name="stock[]"]').value = '0';
+    // Limpiar los campos de texto y números de la nueva fila
+    nuevaFila.querySelectorAll('input').forEach(input => {
+        if (input.type === 'file') {
+            input.value = ''; // Limpia el archivo seleccionado
+        } else if (input.name === 'stock[]') {
+            input.value = '0';
+        } else {
+            input.value = '';
+        }
+    });
+    
+    // Habilitar el botón de eliminar en la nueva fila clonada
+    nuevaFila.querySelector('button').removeAttribute('disabled');
     
     contenedor.appendChild(nuevaFila);
 }
@@ -88,8 +103,6 @@ function eliminarFila(btn) {
     const filas = document.querySelectorAll('.fila-variante');
     if (filas.length > 1) {
         btn.closest('.fila-variante').remove();
-    } else {
-        alert("El producto debe tener al menos una variante.");
     }
 }
 </script>

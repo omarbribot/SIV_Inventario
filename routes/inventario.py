@@ -4,6 +4,7 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from models import db, Categoria, Producto, Variante, Movimiento
 from PIL import Image
+from sqlalchemy.orm import joinedload
 # Definimos el Blueprint
 inventario_bp = Blueprint('inventario', __name__)
 
@@ -45,62 +46,34 @@ def nuevo_producto():
         categoria_id = request.form.get('categoria_id')
         descripcion = request.form.get('descripcion')
 
-        # --- Lógica de Imagen Optimizada con Pillow para PythonAnywhere ---
-        file = request.files.get('imagen')
-        filename = 'default.png'
-
-        if file and file.filename != '':
-            # Generamos un nombre seguro para el archivo
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-            
-            try:
-                # Abrimos la imagen directamente desde el flujo de subida
-                img = Image.open(file)
-                
-                # Forzar conversión a RGB si la imagen tiene transparencias (PNG/WebP) para evitar fallos al salvar en JPEG
-                if img.mode in ("RGBA", "P"):
-                    img = img.convert("RGB")
-                
-                # Redimensionamos manteniendo la proporción original (Max 800px de ancho o alto)
-                max_size = (800, 800)
-                img.thumbnail(max_size, Image.Resampling.LANCZOS)
-                
-                # Guardamos la imagen comprimida al 75% de calidad (reduce drásticamente los MB)
-                img.save(filepath, "JPEG", quality=75)
-                
-            except Exception as e:
-                # Si ocurre un error inesperado con Pillow, intentamos guardarla de forma tradicional para no romper el flujo
-                file.seek(0)
-                file.save(filepath)
-                flash('La imagen se guardó en formato original sin optimizar.', 'warning')
-
-        # 1. Crear el producto base
+        # 1. Crear el producto base (sin imagen global)
         nuevo_p = Producto(
             nombre=nombre,
             categoria_id=categoria_id,
-            descripcion=descripcion,
-            imagen=filename
+            descripcion=descripcion
         )
         db.session.add(nuevo_p)
         db.session.flush()  # Genera el ID de nuevo_p sin cerrar la transacción
 
-        # 2. Capturar las listas de variantes
+        # 2. Capturar las listas de las variantes (incluyendo sus fotos)
         tallas = request.form.getlist('talla[]')
         colores = request.form.getlist('color[]')
         stocks = request.form.getlist('stock[]')
         precios = request.form.getlist('precio[]')
+        fotos = request.files.getlist('foto_variante[]') # Array con las fotos individuales
 
-        # 3. Guardar cada variante de forma segura
-        # Usamos la longitud máxima enviada para no perder datos si falta algún campo
+        # 3. Guardar cada variante procesando su respectiva foto
         limite_iteracion = max(len(tallas), len(colores), len(stocks), len(precios))
 
         for i in range(limite_iteracion):
-            # Obtenemos los valores de forma segura evitando IndexError
             talla_val = tallas[i] if i < len(tallas) else ""
             color_val = colores[i] if i < len(colores) else ""
             stock_raw = stocks[i] if i < len(stocks) else "0"
             precio_raw = precios[i] if i < len(precios) else "0"
+            
+            # Capturar el archivo correspondiente a esta variante específica
+            file = fotos[i] if i < len(fotos) else None
+            filename = 'default.png'
 
             # Validamos que al menos tenga algún dato para guardar la variante
             if talla_val or color_val or precio_raw:
@@ -111,12 +84,37 @@ def nuevo_producto():
                 except ValueError:
                     precio_venta = 0.0
 
+                # --- Lógica de Optimización con Pillow para cada variante individual ---
+                if file and file.filename != '':
+                    filename = secure_filename(file.filename)
+                    # Para evitar colisiones de nombres si suben la misma foto en variantes distintas, 
+                    # le concatenamos el índice o propiedades únicos
+                    base, ext = os.path.splitext(filename)
+                    filename = f"{nuevo_p.id}_{i}_{secure_filename(base)}.jpg"
+                    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+                    
+                    try:
+                        img = Image.open(file)
+                        if img.mode in ("RGBA", "P"):
+                            img = img.convert("RGB")
+                        
+                        max_size = (800, 800)
+                        img.thumbnail(max_size, Image.Resampling.LANCZOS)
+                        img.save(filepath, "JPEG", quality=75)
+                        
+                    except Exception as e:
+                        file.seek(0)
+                        file.save(filepath)
+                        flash(f'La foto de la variante {i+1} se guardó sin optimizar.', 'warning')
+
+                # Crear el registro de la variante con su foto correspondiente
                 v = Variante(
                     producto_id=nuevo_p.id,
                     talla=talla_val if talla_val else "N/A",
                     color=color_val if color_val else "General",
                     stock=stock_inicial,
-                    precio_venta=precio_venta
+                    precio_venta=precio_venta,
+                    imagen=filename # Guardamos el nombre del archivo en la variante
                 )
                 db.session.add(v)
                 db.session.flush()
@@ -126,7 +124,6 @@ def nuevo_producto():
                         variante_id=v.id,
                         usuario_id=current_user.id,
                         tipo='ENTRADA',
-                        
                         cantidad=stock_inicial, 
                         motivo='Carga Inicial de Inventario'
                     )
@@ -137,10 +134,10 @@ def nuevo_producto():
         # --- Lógica de redirección ---
         accion = request.form.get('accion')
         if accion == 'finalizar':
-            flash(f'Producto "{nombre}" guardado de forma completa.', 'success')
+            flash(f'Producto "{nombre}" y sus variantes guardados con éxito.', 'success')
             return redirect(url_for('inventario.ver_inventario'))
         else:
-            flash(f'¡{nombre} registrado! Listo para agregar otro producto.', 'success')
+            flash(f'¡{nombre} registrado con éxito! Listo para el siguiente.', 'success')
             return redirect(url_for('inventario.nuevo_producto'))
 
     categorias = db.session.scalars(db.select(Categoria)).all()
@@ -153,8 +150,9 @@ def ver_historial():
     producto_filtro = request.args.get('producto')
 
     # Consulta base adaptada
-    stmt = db.select(Movimiento)
-
+    stmt = db.select(Movimiento).options(
+        joinedload(Movimiento.variante).joinedload(Variante.producto)
+    )
     if producto_filtro:
         stmt = stmt.join(Movimiento.variante).join(Variante.producto).filter(
             (Producto.nombre.ilike(f'%{producto_filtro}%')) |
